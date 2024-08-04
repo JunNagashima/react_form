@@ -6,12 +6,15 @@ import { z } from 'zod';
 
 export const schema = z.object({
   name: z.string().min(1, '名前は必須です'),
-  email: z.string().email('有効なメールアドレスを入力してください'),
+  email: z.string().min(1, 'メールアドレスは必須です').email('有効なメールアドレスを入力してください'),
   password: z.string().min(6, 'パスワードは6文字以上で入力してください'),
   role: z.enum(['admin', 'user', 'guest'], { required_error: '役割を選択してください' }),
   preferences: z.array(z.string()).nonempty('少なくとも1つの好みを選択してください'),
   startDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: '有効な開始日を入力してください' }),
-  endDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: '有効な終了日を入力してください' })
+  endDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: '有効な終了日を入力してください' }),
+  image: z
+    .instanceof(File)
+    .refine((file) => file && ['image/jpeg', 'image/png', 'image/gif'].includes(file.type), { message: 'JPEG, PNG, GIF形式のファイルのみアップロードできます' })
 }).refine(data => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
@@ -39,7 +42,8 @@ const App = () => {
       role: 'user',
       preferences: [],
       startDate: '',
-      endDate: ''
+      endDate: '',
+      image: undefined,
     }
   });
 
@@ -144,6 +148,19 @@ const App = () => {
               <FormLabel htmlFor="endDate">終了日</FormLabel>
               <Input id="endDate" type="date" {...field} />
               <FormErrorMessage>{errors.endDate && errors.endDate.message}</FormErrorMessage>
+            </FormControl>
+          )}
+        />
+
+        <Controller
+          name="image"
+          control={control}
+          render={({ field }) => (
+            <FormControl isInvalid={!!errors.image} mb="4">
+              <FormLabel htmlFor="image">画像ファイル</FormLabel>
+              <Input id="image" type="file" accept="image/jpeg,image/png,image/gif" onChange={(e) => field.onChange(e.target.files?.[0])} />
+              <FormErrorMessage>{errors.image && errors.image.message}</FormErrorMessage>
+              {field.value && <img src={URL.createObjectURL(field.value)} alt="選択された画像" width="100%" />}
             </FormControl>
           )}
         />
